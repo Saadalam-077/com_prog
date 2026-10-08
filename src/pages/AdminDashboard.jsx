@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import { TOTAL_WEEKS, isCourseWeekKey } from '../data/courseData';
+
+const countCompletedWeeks = (progress) => Object.entries(progress || {}).filter(([key, p]) => p.completed && isCourseWeekKey(key)).length;
 
 const AdminDashboard = ({ onLogout }) => {
   const [students, setStudents] = useState([]);
@@ -76,7 +79,7 @@ const AdminDashboard = ({ onLogout }) => {
           </div>
           <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700">
             <h3 className="text-slate-400 text-sm mb-2">Completed Course</h3>
-            <p className="text-4xl font-bold text-blue-400">{students.filter(s => Object.values(s.progress || {}).filter(p => p.completed).length >= 10).length}</p>
+            <p className="text-4xl font-bold text-blue-400">{students.filter(s => countCompletedWeeks(s.progress) >= TOTAL_WEEKS).length}</p>
           </div>
           <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700">
             <h3 className="text-slate-400 text-sm mb-2">Average Score</h3>
@@ -113,15 +116,15 @@ const AdminDashboard = ({ onLogout }) => {
                 <tbody className="divide-y divide-slate-700">
                   {filteredStudents.map((student) => {
                     const { grade, avg } = calculateGrade(student.progress);
-                    const completedWeeks = Object.values(student.progress || {}).filter(p => p.completed).length;
+                    const completedWeeks = countCompletedWeeks(student.progress);
                     return (
                       <tr key={student.id} className="hover:bg-slate-700/30">
                         <td className="px-6 py-4"><div><p className="text-white font-medium">{student.student_name}</p><p className="text-slate-400 text-sm">{student.student_number}</p></div></td>
                         <td className="px-6 py-4"><span className="px-3 py-1 bg-cyan-600/20 text-cyan-400 rounded-full text-sm">{student.section_number}</span></td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <div className="w-24 h-2 bg-slate-700 rounded-full overflow-hidden"><div className="h-full bg-cyan-500" style={{ width: `${(completedWeeks / 10) * 100}%` }} /></div>
-                            <span className="text-slate-400 text-sm">{completedWeeks}/10</span>
+                            <div className="w-24 h-2 bg-slate-700 rounded-full overflow-hidden"><div className="h-full bg-cyan-500" style={{ width: `${(completedWeeks / TOTAL_WEEKS) * 100}%` }} /></div>
+                            <span className="text-slate-400 text-sm">{completedWeeks}/{TOTAL_WEEKS}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4"><span className={`font-bold ${getGradeColor(grade)}`}>{grade}</span><span className="text-slate-500 text-sm ml-2">({avg}%)</span></td>

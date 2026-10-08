@@ -1,21 +1,11 @@
 import React from 'react';
+import { weekData, weekNumbers, TOTAL_WEEKS, isCourseWeekKey } from '../data/courseData';
 
 const HomePage = ({ user, onNavigate, onLogout }) => {
-  const weeks = [
-    { week: 1, titleEn: "Basic Programming Review", titleAr: "مراجعة المفاهيم الأساسية", icon: "🔄" },
-    { week: 2, titleEn: "Predefined & User Functions", titleAr: "الدوال المعرفة والجاهزة", icon: "⚙️" },
-    { week: 3, titleEn: "Functions & Parameters", titleAr: "الدوال وتمرير المعاملات", icon: "📥" },
-    { week: 4, titleEn: "Enum & Overloading", titleAr: "التعدادات وزيادة التحميل", icon: "🔢" },
-    { week: 5, titleEn: "Strings", titleAr: "السلاسل النصية", icon: "📝" },
-    { week: 6, titleEn: "Arrays and Loops", titleAr: "المصفوفات والحلقات", icon: "📊" },
-    { week: 7, titleEn: "2D Arrays", titleAr: "المصفوفات ثنائية الأبعاد", icon: "🧮" },
-    { week: 8, titleEn: "Sorting & Searching", titleAr: "الفرز والبحث", icon: "🔍" },
-    { week: 9, titleEn: "Structures & Objects", titleAr: "الهياكل والكائنات", icon: "🏗️" },
-    { week: 10, titleEn: "Intro to OOP", titleAr: "مقدمة في OOP", icon: "🎯" },
-  ];
+  const weeks = weekNumbers.map((n) => ({ week: n, ...weekData[n] }));
 
-  const completedWeeks = Object.entries(user.progress).filter(([key, val]) => val.completed && parseInt(key.replace('week', '')) <= 10).length;
-  const progressPercent = Math.round((completedWeeks / 10) * 100);
+  const completedWeeks = Object.entries(user.progress).filter(([key, val]) => val.completed && isCourseWeekKey(key)).length;
+  const progressPercent = Math.round((completedWeeks / TOTAL_WEEKS) * 100);
 
   const getGradeColor = (grade) => {
     if (grade === 'A+' || grade === 'A') return 'text-cyan-400';
@@ -75,7 +65,7 @@ const HomePage = ({ user, onNavigate, onLogout }) => {
             <h3 className="text-slate-400 text-sm mb-2">Overall Progress | التقدم العام</h3>
             <div className="flex items-end gap-3">
               <span className="text-4xl font-bold text-white">{progressPercent}%</span>
-              <span className="text-slate-400 text-sm mb-1">{completedWeeks}/10 weeks</span>
+              <span className="text-slate-400 text-sm mb-1">{completedWeeks}/{TOTAL_WEEKS} weeks</span>
             </div>
             <div className="mt-4 h-3 bg-slate-700 rounded-full overflow-hidden">
               <div className="h-full bg-gradient-to-r from-cyan-500 to-cyan-400 transition-all" style={{ width: `${progressPercent}%` }} />

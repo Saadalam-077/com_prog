@@ -1,7 +1,8 @@
 import React from 'react';
+import { weekData, weekNumbers, TOTAL_WEEKS, isCourseWeekKey } from '../data/courseData';
 
 const ProfilePage = ({ user, onNavigate, onLogout }) => {
-  const completedWeeks = Object.entries(user.progress).filter(([key, val]) => val.completed).length;
+  const completedWeeks = Object.entries(user.progress).filter(([key, val]) => val.completed && isCourseWeekKey(key)).length;
 
   const getGradeColor = (grade) => {
     if (grade === 'A+' || grade === 'A') return 'text-cyan-400';
@@ -43,7 +44,7 @@ const ProfilePage = ({ user, onNavigate, onLogout }) => {
             </div>
             <div className="bg-slate-700/50 rounded-xl p-5 text-center">
               <p className="text-slate-400 text-sm mb-2">Progress</p>
-              <p className="text-4xl font-bold text-cyan-400">{completedWeeks}/10</p>
+              <p className="text-4xl font-bold text-cyan-400">{completedWeeks}/{TOTAL_WEEKS}</p>
             </div>
           </div>
         </div>
@@ -51,15 +52,15 @@ const ProfilePage = ({ user, onNavigate, onLogout }) => {
         <div className="bg-slate-800/50 rounded-2xl p-8 border border-slate-700">
           <h2 className="text-xl font-bold text-white mb-6">Week Progress | تقدم الأسابيع</h2>
           <div className="space-y-3">
-            {Array.from({ length: 10 }, (_, i) => i + 1).map((week) => {
-              const weekData = user.progress[`week${week}`];
-              const isCompleted = weekData?.completed;
-              const score = weekData?.score || 0;
+            {weekNumbers.map((week) => {
+              const weekProgress = user.progress[`week${week}`];
+              const isCompleted = weekProgress?.completed;
+              const score = weekProgress?.score || 0;
               return (
                 <div key={week} className={`flex items-center justify-between p-4 rounded-xl ${isCompleted ? 'bg-cyan-900/30 border border-cyan-500/30' : 'bg-slate-700/30'}`}>
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isCompleted ? 'bg-cyan-600' : 'bg-slate-600'}`}>{isCompleted ? '✓' : week}</div>
-                    <span className="text-white">Week {week}</span>
+                    <span className="text-white">Week {week}: {weekData[week].titleEn}</span>
                   </div>
                   {isCompleted ? (<span className={`font-bold ${score >= 90 ? 'text-cyan-400' : score >= 75 ? 'text-blue-400' : score >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>{score}%</span>) : (<span className="text-slate-500">Not completed</span>)}
                 </div>
