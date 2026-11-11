@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 const RegisterPage = ({ onRegister, onNavigate }) => {
-  const [form, setForm] = useState({ studentName: '', studentNumber: '', sectionNumber: '2444', password: '', confirmPassword: '' });
+  const [form, setForm] = useState({ studentName: '', studentNumber: '', sectionNumber: '2444', email: '', password: '', confirmPassword: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -28,6 +28,10 @@ const RegisterPage = ({ onRegister, onNavigate }) => {
       const result = await onRegister(form);
       if (result === true) {
         setSuccess('Registration successful! Redirecting... | تم التسجيل بنجاح! جاري التحويل...');
+      } else if (result === 'email_exists') {
+        setError('This email is already used by another account | هذا البريد مستخدم في حساب آخر');
+      } else if (result === 'error') {
+        setError('Registration failed. Please try again. | فشل التسجيل. حاول مرة أخرى.');
       } else {
         setError('Student number already exists | الرقم الجامعي مسجل مسبقاً');
       }
@@ -60,6 +64,11 @@ const RegisterPage = ({ onRegister, onNavigate }) => {
           <div>
             <label className="block text-slate-300 text-sm mb-2">Student Number (8 digits) | الرقم الجامعي</label>
             <input type="text" value={form.studentNumber} onChange={(e) => setForm({...form, studentNumber: e.target.value.replace(/\D/g, '').slice(0, 8)})} className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-cyan-500" required disabled={loading} />
+          </div>
+
+          <div>
+            <label className="block text-slate-300 text-sm mb-2">Email (for password recovery) | البريد الإلكتروني</label>
+            <input type="email" value={form.email} onChange={(e) => setForm({...form, email: e.target.value})} className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-cyan-500" placeholder="you@example.com" required disabled={loading} />
           </div>
 
           <div>

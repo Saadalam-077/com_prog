@@ -50,6 +50,10 @@ const LoginPage = ({ onLogin, onNavigate }) => {
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-cyan-500" placeholder="Enter password" required disabled={loading} />
           </div>
 
+          <div className="text-right -mt-2">
+            <button type="button" onClick={() => onNavigate('forgot')} className="text-sm text-cyan-400 hover:underline">Forgot password? | نسيت كلمة المرور؟</button>
+          </div>
+
           <button type="submit" disabled={loading} className="w-full py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
             {loading ? (<><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>Logging in...</>) : ('Login | تسجيل الدخول')}
           </button>

@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage';
 import ProfilePage from './pages/ProfilePage';
 import AdminDashboard from './pages/AdminDashboard';
 import WeekLesson from './pages/WeekLesson';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 
 const STORAGE_KEY = 'cp2User';
 
@@ -70,6 +71,7 @@ function App() {
         studentName: data.student_name,
         studentNumber: data.student_number,
         sectionNumber: data.section_number,
+        email: data.email || '',
         progress: progress,
         overallGrade: grade,
         totalScore: avg
@@ -94,25 +96,36 @@ function App() {
 
       if (existing) return false;
 
+      const email = formData.email.trim().toLowerCase();
+      const { data: emailTaken } = await supabase
+        .from('cp2_students')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (emailTaken) return 'email_exists';
+
       const { data, error } = await supabase
         .from('cp2_students')
         .insert([{
           student_name: formData.studentName,
           student_number: formData.studentNumber,
           section_number: formData.sectionNumber,
+          email,
           password: formData.password,
           progress: {}
         }])
         .select()
         .single();
 
-      if (error) return false;
+      if (error) return error.code === '23505' ? 'email_exists' : 'error';
 
       const userData = {
         id: data.id,
         studentName: data.student_name,
         studentNumber: data.student_number,
         sectionNumber: data.section_number,
+        email: data.email || '',
         progress: {},
         overallGrade: 'N/A',
         totalScore: 0
@@ -123,7 +136,7 @@ function App() {
       return true;
     } catch (err) {
       console.error('Register error:', err);
-      return false;
+      return 'error';
     }
   };
 
@@ -150,6 +163,26 @@ function App() {
     }
   };
 
+  const handleUpdateEmail = async (newEmail) => {
+    if (!user || user.isAdmin) return 'error';
+    const email = newEmail.trim().toLowerCase();
+    const { data: taken } = await supabase
+      .from('cp2_students')
+      .select('id')
+      .eq('email', email)
+      .neq('id', user.id)
+      .maybeSingle();
+    if (taken) return 'email_exists';
+
+    const { error } = await supabase.from('cp2_students').update({ email }).eq('id', user.id);
+    if (error) return error.code === '23505' ? 'email_exists' : 'error';
+
+    const updatedUser = { ...user, email };
+    setUser(updatedUser);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
+    return true;
+  };
+
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem(STORAGE_KEY);
@@ -170,10 +203,11 @@ function App() {
   }
 
   if (currentPage === 'login') return <LoginPage onLogin={handleLogin} onNavigate={handleNavigate} />;
+  if (currentPage === 'forgot') return <ForgotPasswordPage onNavigate={handleNavigate} />;
   if (currentPage === 'register') return <RegisterPage onRegister={handleRegister} onNavigate={handleNavigate} />;
   if (currentPage === 'admin' && user?.isAdmin) return <AdminDashboard onLogout={handleLogout} />;
   if (currentPage === 'home' && user) return <HomePage user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
-  if (currentPage === 'profile' && user) return <ProfilePage user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
+  if (currentPage === 'profile' && user) return <ProfilePage user={user} onNavigate={handleNavigate} onLogout={handleLogout} onUpdateEmail={handleUpdateEmail} />;
   if (currentPage.startsWith('week') && user) {
     const weekNum = parseInt(currentPage.replace('week', ''));
     return <WeekLesson weekNum={weekNum} user={user} onNavigate={handleNavigate} onExerciseComplete={handleExerciseComplete} onLogout={handleLogout} />;
