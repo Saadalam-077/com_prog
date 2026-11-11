@@ -1,7 +1,7 @@
 # Forgot Password — Setup
 
 Students who forget their password click **"Forgot password?"** on the login page,
-enter their email, receive a 6‑digit code by email, and choose a new password.
+enter their email, and receive their student number and current password by email.
 
 Because the site is hosted on GitHub Pages (static), the email is sent by a
 **Supabase Edge Function** using **[Resend](https://resend.com)** (free tier: 3,000 emails/month).
@@ -9,7 +9,7 @@ Because the site is hosted on GitHub Pages (static), the email is sent by a
 ## 1. Database
 Open Supabase → **SQL Editor** and run
 `supabase/migrations/20261111000000_password_reset.sql`.
-It adds an `email` column to `cp2_students` and a `cp2_password_resets` table.
+It adds an `email` column to `cp2_students` and a `cp2_password_emails` table (used to limit to one email per minute per account).
 
 ## 2. Email provider (Resend)
 1. Create an account at resend.com and create an API key.
@@ -30,7 +30,6 @@ Students who registered before this change have no email. They should log in,
 open **Profile**, and save a recovery email. New students enter it at registration.
 
 ## How it works
-- `request`: looks up the student by email, stores a SHA‑256 hash of a random
-  6‑digit code (valid 15 min, one request per 60 s), and emails the code.
-  It responds identically whether or not the email exists.
-- `confirm`: checks the code (max 5 wrong attempts), then updates the password.
+The function looks up the student by email and emails them their student number
+and password. One account can be emailed at most once per 60 seconds. If the
+email isn't registered, the page says so.
