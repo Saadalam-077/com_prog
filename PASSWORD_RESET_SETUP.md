@@ -16,8 +16,7 @@ One-time: add these in GitHub → repo **Settings → Secrets and variables → 
 
 | Secret | Where to get it |
 |---|---|
-| `SUPABASE_ACCESS_TOKEN` | supabase.com → your avatar → **Account preferences → Access Tokens → Generate new token** |
-| `SUPABASE_DB_PASSWORD` | the database password set when the project was created (reset it in **Project Settings → Database** if forgotten) |
+| `SUPABASE_ACCESS_TOKEN` | supabase.com → your avatar → **Account preferences → Access Tokens → Generate new token**. Give it full access (no permission restrictions), and use an account that is **Owner** or **Administrator** of the project's organization |
 | `RESEND_API_KEY` | resend.com → **API Keys → Create API Key** (Sending access) |
 | `RESET_FROM_EMAIL` | optional, e.g. `Computer Programming <noreply@yourdomain.com>` (needs a domain verified in Resend) |
 
