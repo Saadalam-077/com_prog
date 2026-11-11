@@ -18,8 +18,8 @@ const RegisterPage = ({ onRegister, onNavigate }) => {
       setError('Student number must be 8 digits | الرقم الجامعي يجب أن يكون 8 أرقام');
       return;
     }
-    if (form.password.length < 4) {
-      setError('Password must be at least 4 characters | كلمة المرور يجب أن تكون 4 أحرف على الأقل');
+    if (form.password.length < 8) {
+      setError('Password must be at least 8 characters | كلمة المرور يجب ألا تقل عن 8 أحرف');
       return;
     }
 
@@ -67,7 +67,7 @@ const RegisterPage = ({ onRegister, onNavigate }) => {
           </div>
 
           <div>
-            <label className="block text-slate-300 text-sm mb-2">Email (for password recovery) | البريد الإلكتروني</label>
+            <label className="block text-slate-300 text-sm mb-2">Email | البريد الإلكتروني</label>
             <input type="email" value={form.email} onChange={(e) => setForm({...form, email: e.target.value})} className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-cyan-500" placeholder="you@example.com" required disabled={loading} />
           </div>
 

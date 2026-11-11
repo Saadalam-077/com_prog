@@ -13,7 +13,7 @@ const AdminDashboard = ({ onLogout }) => {
 
   const fetchStudents = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('cp2_students').select('*').order('student_name');
+    const { data, error } = await supabase.from('cp2_students').select('id, student_name, student_number, section_number, email, progress').order('student_name');
     if (!error && data) setStudents(data);
     setLoading(false);
   };
@@ -51,20 +51,6 @@ const AdminDashboard = ({ onLogout }) => {
     if (!confirm(`Reset all progress for ${name}?`)) return;
     const { error } = await supabase.from('cp2_students').update({ progress: {} }).eq('id', id);
     if (!error) setStudents(students.map(s => s.id === id ? { ...s, progress: {} } : s));
-  };
-
-  const showPassword = (student) => {
-    const newPassword = prompt(
-      `${student.student_name} (${student.student_number})\n\nCurrent password: ${student.password}\n\nTo change it, type a new password and press OK (min 4 characters):`,
-      ''
-    );
-    if (newPassword === null || newPassword === '') return;
-    if (newPassword.length < 4) { alert('Password must be at least 4 characters'); return; }
-    supabase.from('cp2_students').update({ password: newPassword }).eq('id', student.id).then(({ error }) => {
-      if (error) { alert('Could not change password'); return; }
-      setStudents(prev => prev.map(s => s.id === student.id ? { ...s, password: newPassword } : s));
-      alert(`Password changed to: ${newPassword}`);
-    });
   };
 
   const editEmail = async (student) => {
@@ -154,7 +140,6 @@ const AdminDashboard = ({ onLogout }) => {
                         <td className="px-6 py-4"><span className={`font-bold ${getGradeColor(grade)}`}>{grade}</span><span className="text-slate-500 text-sm ml-2">({avg}%)</span></td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <button onClick={() => showPassword(student)} className="px-3 py-1 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 rounded text-sm">Password</button>
                             <button onClick={() => editEmail(student)} className="px-3 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded text-sm">Email</button>
                             <button onClick={() => resetProgress(student.id, student.student_name)} className="px-3 py-1 bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400 rounded text-sm">Reset</button>
                             <button onClick={() => deleteStudent(student.id, student.student_name)} className="px-3 py-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded text-sm">Delete</button>

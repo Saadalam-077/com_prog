@@ -6,7 +6,7 @@ import HomePage from './pages/HomePage';
 import ProfilePage from './pages/ProfilePage';
 import AdminDashboard from './pages/AdminDashboard';
 import WeekLesson from './pages/WeekLesson';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import RecoveryPage from './pages/RecoveryPage';
 
 const STORAGE_KEY = 'cp2User';
 
@@ -55,14 +55,11 @@ function App() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('cp2_students')
-        .select('*')
-        .eq('student_number', studentNumber)
-        .eq('password', password)
-        .single();
-
-      if (error || !data) return false;
+      const { data, error } = await supabase.rpc('cp2_student_login', {
+        p_student_number: studentNumber.trim(),
+        p_password: password
+      });
+      if (error || !data?.success) return false;
 
       const progress = data.progress || {};
       const { grade, avg } = calculateGrade(progress);
@@ -88,37 +85,20 @@ function App() {
 
   const handleRegister = async (formData) => {
     try {
-      const { data: existing } = await supabase
-        .from('cp2_students')
-        .select('id')
-        .eq('student_number', formData.studentNumber)
-        .single();
-
-      if (existing) return false;
-
-      const email = formData.email.trim().toLowerCase();
-      const { data: emailTaken } = await supabase
-        .from('cp2_students')
-        .select('id')
-        .eq('email', email)
-        .maybeSingle();
-
-      if (emailTaken) return 'email_exists';
-
-      const { data, error } = await supabase
-        .from('cp2_students')
-        .insert([{
-          student_name: formData.studentName,
-          student_number: formData.studentNumber,
-          section_number: formData.sectionNumber,
-          email,
-          password: formData.password,
-          progress: {}
-        }])
-        .select()
-        .single();
-
-      if (error) return error.code === '23505' ? 'email_exists' : 'error';
+      const { data: result, error } = await supabase.rpc('cp2_register_student', {
+        p_student_name: formData.studentName.trim(),
+        p_student_number: formData.studentNumber.trim(),
+        p_section_number: formData.sectionNumber,
+        p_email: formData.email.trim().toLowerCase(),
+        p_password: formData.password
+      });
+      if (error) return 'error';
+      if (!result?.success) {
+        if (result?.error === 'email_exists') return 'email_exists';
+        if (result?.error === 'exists') return false;
+        return 'error';
+      }
+      const data = result.student;
 
       const userData = {
         id: data.id,
@@ -163,6 +143,19 @@ function App() {
     }
   };
 
+  const handlePasswordRecovery = async (studentNumber, recoveryCode, newPassword) => {
+    const { data, error } = await supabase.rpc('cp2_reset_student_password', {
+      p_student_number: studentNumber.trim(),
+      p_recovery_code: recoveryCode.trim(),
+      p_new_password: newPassword
+    });
+    if (error) {
+      console.error('Password recovery error:', error);
+      return false;
+    }
+    return data === true;
+  };
+
   const handleUpdateEmail = async (newEmail) => {
     if (!user || user.isAdmin) return 'error';
     const email = newEmail.trim().toLowerCase();
@@ -203,7 +196,7 @@ function App() {
   }
 
   if (currentPage === 'login') return <LoginPage onLogin={handleLogin} onNavigate={handleNavigate} />;
-  if (currentPage === 'forgot') return <ForgotPasswordPage onNavigate={handleNavigate} />;
+  if (currentPage === 'forgot') return <RecoveryPage onRecover={handlePasswordRecovery} onNavigate={handleNavigate} />;
   if (currentPage === 'register') return <RegisterPage onRegister={handleRegister} onNavigate={handleNavigate} />;
   if (currentPage === 'admin' && user?.isAdmin) return <AdminDashboard onLogout={handleLogout} />;
   if (currentPage === 'home' && user) return <HomePage user={user} onNavigate={handleNavigate} onLogout={handleLogout} />;
