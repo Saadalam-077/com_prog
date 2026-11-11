@@ -14,6 +14,8 @@ jobs:
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      GMAIL_USER: ${{ secrets.GMAIL_USER }}
+      GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
       RESET_FROM_EMAIL: ${{ secrets.RESET_FROM_EMAIL }}
       PROJECT_REF: zxqpcuncbpzxsaqmfcby
     steps:
@@ -23,7 +25,9 @@ jobs:
         run: |
           missing=""
           [ -z "$SUPABASE_ACCESS_TOKEN" ] && missing="$missing SUPABASE_ACCESS_TOKEN"
-          [ -z "$RESEND_API_KEY" ] && missing="$missing RESEND_API_KEY"
+          if [ -z "$RESEND_API_KEY" ] && { [ -z "$GMAIL_USER" ] || [ -z "$GMAIL_APP_PASSWORD" ]; }; then
+            missing="$missing GMAIL_USER+GMAIL_APP_PASSWORD(or RESEND_API_KEY)"
+          fi
           if [ -n "$missing" ]; then
             echo "::error::Missing GitHub secrets:$missing (Settings → Secrets and variables → Actions). See PASSWORD_RESET_SETUP.md"
             exit 1
@@ -51,11 +55,12 @@ jobs:
 
       - name: Save email settings in Supabase
         run: |
-          if [ -n "$RESET_FROM_EMAIL" ]; then
-            supabase secrets set RESEND_API_KEY="$RESEND_API_KEY" RESET_FROM_EMAIL="$RESET_FROM_EMAIL" --remote="$PROJECT_REF" --yes
-          else
-            supabase secrets set RESEND_API_KEY="$RESEND_API_KEY" --remote="$PROJECT_REF" --yes
-          fi
+          args=()
+          [ -n "$RESEND_API_KEY" ] && args+=("RESEND_API_KEY=$RESEND_API_KEY")
+          [ -n "$RESET_FROM_EMAIL" ] && args+=("RESET_FROM_EMAIL=$RESET_FROM_EMAIL")
+          [ -n "$GMAIL_USER" ] && args+=("GMAIL_USER=$GMAIL_USER")
+          [ -n "$GMAIL_APP_PASSWORD" ] && args+=("GMAIL_APP_PASSWORD=$GMAIL_APP_PASSWORD")
+          supabase secrets set "${args[@]}" --remote="$PROJECT_REF" --yes
 
       - name: Deploy password-reset function
         run: supabase functions deploy password-reset --use-api --remote="$PROJECT_REF" --yes
