@@ -18,11 +18,8 @@ const EmailCard = ({ user, onUpdateEmail }) => {
 
   return (
     <div className="bg-slate-800/50 rounded-2xl p-8 border border-slate-700 mb-8">
-      <h2 className="text-xl font-bold text-white mb-2">Recovery Email | البريد الإلكتروني</h2>
-      <p className="text-slate-400 text-sm mb-4">Used to reset your password if you forget it. | يُستخدم لاستعادة كلمة المرور.</p>
-      {!user.email && (
-        <p className="text-yellow-400 text-sm mb-4">⚠️ No email set yet — add one so you can recover your password. | لم تضف بريداً بعد</p>
-      )}
+      <h2 className="text-xl font-bold text-white mb-2">Email | البريد الإلكتروني</h2>
+      <p className="text-slate-400 text-sm mb-4">Your contact email. | بريدك الإلكتروني للتواصل.</p>
       <form onSubmit={save} className="flex flex-col sm:flex-row gap-3">
         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="flex-1 px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-cyan-500" placeholder="you@example.com" required disabled={saving} />
         <button type="submit" disabled={saving || email.trim().toLowerCase() === (user.email || '')} className="px-6 py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
