@@ -5,12 +5,16 @@
 //      -> for old accounts that have no email yet: if the number and full name match,
 //         saves the email on the account and sends the password to it
 //
-// Required secrets (supabase secrets set ...):
-//   RESEND_API_KEY   - API key from https://resend.com
-//   RESET_FROM_EMAIL - verified sender, e.g. "Computer Programming <noreply@yourdomain.com>"
+// Email is sent with Gmail when GMAIL_USER and GMAIL_APP_PASSWORD are set, otherwise with Resend.
+// Secrets (supabase secrets set ...):
+//   GMAIL_USER         - Gmail address that sends the emails, e.g. cpcourse@gmail.com
+//   GMAIL_APP_PASSWORD - 16-character Google app password for that account
+//   RESEND_API_KEY     - (alternative) API key from https://resend.com
+//   RESET_FROM_EMAIL   - (Resend only) verified sender, e.g. "Computer Programming <noreply@yourdomain.com>"
 // SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are provided automatically.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import nodemailer from "npm:nodemailer@6.9.16";
 
 // Minimum time between two recovery emails to the same account (stops spamming a student).
 const RESEND_COOLDOWN_SECONDS = 60;
@@ -53,6 +57,26 @@ async function sendEmail(to: string, name: string, studentNumber: string, passwo
       </div>
     </div>`;
 
+  const subject = "Your password | كلمة المرور الخاصة بك";
+
+  const gmailUser = Deno.env.get("GMAIL_USER");
+  const gmailPass = Deno.env.get("GMAIL_APP_PASSWORD");
+  if (gmailUser && gmailPass) {
+    // Port 465 (SSL): Supabase Edge Functions block outgoing ports 25 and 587.
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: { user: gmailUser, pass: gmailPass.replace(/\s+/g, "") },
+    });
+    try {
+      await transporter.sendMail({ from: `"Computer Programming" <${gmailUser}>`, to, subject, html });
+    } catch (e) {
+      throw new EmailSendError(`Gmail: ${(e as Error).message}`);
+    }
+    return;
+  }
+
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -62,7 +86,7 @@ async function sendEmail(to: string, name: string, studentNumber: string, passwo
     body: JSON.stringify({
       from: Deno.env.get("RESET_FROM_EMAIL") ?? "onboarding@resend.dev",
       to,
-      subject: "Your password | كلمة المرور الخاصة بك",
+      subject,
       html,
     }),
   });
@@ -150,6 +174,6 @@ Deno.serve(async (req) => {
     if (err instanceof EmailSendError) {
       return json({ ok: false, error: "email_failed", detail: err.message }, 502);
     }
-    return json({ ok: false, error: "server_error", detail: String(err?.message ?? err) }, 500);
+    return json({ ok: false, error: "server_error", detail: err instanceof Error ? err.message : String(err) }, 500);
   }
 });

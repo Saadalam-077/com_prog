@@ -32,8 +32,19 @@ const ForgotPasswordPage = ({ onNavigate }) => {
         : { email: email.trim().toLowerCase() },
     });
     if (fnError) {
-      // Non-2xx responses still carry our JSON body with an error code.
-      try { result = await fnError.context.json(); } catch { result = { ok: false }; }
+      // Non-2xx responses still carry a body; show whatever it says so problems are visible.
+      const ctx = fnError.context;
+      if (ctx && typeof ctx.text === 'function') {
+        const text = await ctx.text().catch(() => '');
+        try {
+          const body = JSON.parse(text);
+          result = body.error ? body : { ok: false, detail: `HTTP ${ctx.status}: ${body.message || body.msg || text}` };
+        } catch {
+          result = { ok: false, detail: `HTTP ${ctx.status}: ${text.slice(0, 200)}` };
+        }
+      } else {
+        result = { ok: false, detail: fnError.message || String(fnError) };
+      }
     } else {
       result = data;
     }

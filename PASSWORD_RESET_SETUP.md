@@ -17,10 +17,19 @@ One-time: add these in GitHub → repo **Settings → Secrets and variables → 
 | Secret | Where to get it |
 |---|---|
 | `SUPABASE_ACCESS_TOKEN` | supabase.com → your avatar → **Account preferences → Access Tokens → Generate new token**. Give it full access (no permission restrictions), and use an account that is **Owner** or **Administrator** of the project's organization |
-| `RESEND_API_KEY` | resend.com → **API Keys → Create API Key** (Sending access) |
-| `RESET_FROM_EMAIL` | optional, e.g. `Computer Programming <noreply@yourdomain.com>` (needs a domain verified in Resend) |
+| `GMAIL_USER` | a Gmail address for sending, e.g. `cpcourse.tu@gmail.com` |
+| `GMAIL_APP_PASSWORD` | Google app password for that Gmail (see below) |
+| `RESEND_API_KEY` | alternative to Gmail; only works for students once a domain is verified in Resend |
+| `RESET_FROM_EMAIL` | Resend only, e.g. `Computer Programming <noreply@yourdomain.com>` |
 
-Without a verified domain, Resend only delivers to your own Resend account email.
+When `GMAIL_USER` and `GMAIL_APP_PASSWORD` are set, Gmail is used (any student can
+receive emails, about 500 per day). Otherwise Resend is used, which without a verified
+domain only delivers to your own Resend account email.
+
+### Gmail app password
+1. Sign in to the Gmail account → https://myaccount.google.com/security → turn on **2-Step Verification**.
+2. Open https://myaccount.google.com/apppasswords → name it `com_prog` → **Create**.
+3. Copy the 16-letter password into the `GMAIL_APP_PASSWORD` secret.
 
 ## Manual setup (alternative)
 1. Supabase → **SQL Editor** → run `supabase/migrations/20261111000000_password_reset.sql`.
