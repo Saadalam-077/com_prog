@@ -35,6 +35,8 @@ const supabase = createClient(
 const escapeHtml = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 
+class EmailSendError extends Error {}
+
 async function sendEmail(to: string, name: string, studentNumber: string, password: string) {
   const n = escapeHtml(name), num = escapeHtml(studentNumber), pw = escapeHtml(password);
   const html = `
@@ -64,7 +66,12 @@ async function sendEmail(to: string, name: string, studentNumber: string, passwo
       html,
     }),
   });
-  if (!res.ok) throw new Error(`Email send failed: ${res.status} ${await res.text()}`);
+  if (!res.ok) {
+    const text = await res.text();
+    let detail = text;
+    try { detail = JSON.parse(text).message ?? text; } catch { /* keep raw text */ }
+    throw new EmailSendError(`${res.status}: ${detail}`);
+  }
 }
 
 // Lower-case, collapse spaces, drop Arabic diacritics/tatweel so small typing differences still match.
@@ -140,6 +147,9 @@ Deno.serve(async (req) => {
     return json({ ok: true });
   } catch (err) {
     console.error(err);
-    return json({ ok: false, error: "server_error" }, 500);
+    if (err instanceof EmailSendError) {
+      return json({ ok: false, error: "email_failed", detail: err.message }, 502);
+    }
+    return json({ ok: false, error: "server_error", detail: String(err?.message ?? err) }, 500);
   }
 });

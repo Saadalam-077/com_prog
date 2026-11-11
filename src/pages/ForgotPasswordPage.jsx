@@ -7,6 +7,7 @@ const errorMessages = {
   no_match: 'Student number and name do not match our records. Write your name exactly as you registered, or contact your instructor. | الرقم الجامعي والاسم غير متطابقين. اكتب اسمك كما سجلته أو تواصل مع المحاضر',
   has_email: 'This account already has an email. Use the "I registered with an email" option. | هذا الحساب لديه بريد مسجل مسبقاً، استخدم الخيار الأول',
   email_taken: 'This email is already used by another account | هذا البريد مستخدم في حساب آخر',
+  email_failed: 'Your email was saved, but the email could not be sent. Please contact your instructor. | تم حفظ بريدك لكن تعذر إرسال الرسالة، تواصل مع المحاضر',
   too_soon: 'An email was just sent. Please wait a minute before trying again. | تم إرسال بريد للتو، انتظر دقيقة ثم حاول مرة أخرى',
 };
 
@@ -41,7 +42,8 @@ const ForgotPasswordPage = ({ onNavigate }) => {
     if (result?.ok) {
       setSent(true);
     } else {
-      setError(errorMessages[result?.error] || 'Something went wrong. Please try again. | حدث خطأ، حاول مرة أخرى');
+      const base = errorMessages[result?.error] || 'Something went wrong. Please try again. | حدث خطأ، حاول مرة أخرى';
+      setError(result?.detail ? `${base} (${result.detail})` : base);
     }
   };
 
