@@ -6,34 +6,28 @@ enter their email, and receive their student number and current password by emai
 Because the site is hosted on GitHub Pages (static), the email is sent by a
 **Supabase Edge Function** using **[Resend](https://resend.com)** (free tier: 3,000 emails/month).
 
-## 1. Database
-Open Supabase → **SQL Editor** and run
-`supabase/migrations/20261111000000_password_reset.sql`.
-It adds an `email` column to `cp2_students` and a `cp2_password_emails` table (used to limit to one email per minute per account).
+## Automatic setup (recommended)
+`.github/workflows/supabase.yml` runs on every push to `main` that changes `supabase/`
+(or manually from **Actions → Deploy Supabase → Run workflow**). It applies the database
+change, saves the email key in Supabase and deploys the `password-reset` function.
+Students and their progress are never deleted.
 
-## 2. Email provider (Resend)
-1. Sign up at https://resend.com.
-2. **API Keys** → **Create API Key** (permission: *Sending access*) → copy the key (starts with `re_`, shown once).
-3. To email students you need a domain you own: **Domains** → **Add Domain** → add the DNS
-   records it shows at your domain provider → wait for **Verified**.
-   Without a domain you can only send from `onboarding@resend.dev` to your own Resend email (testing only).
+One-time: add these in GitHub → repo **Settings → Secrets and variables → Actions → New repository secret**:
 
-## 3. Deploy the Edge Function
+| Secret | Where to get it |
+|---|---|
+| `SUPABASE_ACCESS_TOKEN` | supabase.com → your avatar → **Account preferences → Access Tokens → Generate new token** |
+| `SUPABASE_DB_PASSWORD` | the database password set when the project was created (reset it in **Project Settings → Database** if forgotten) |
+| `RESEND_API_KEY` | resend.com → **API Keys → Create API Key** (Sending access) |
+| `RESET_FROM_EMAIL` | optional, e.g. `Computer Programming <noreply@yourdomain.com>` (needs a domain verified in Resend) |
 
-### Option A — Supabase dashboard (no install)
-1. Supabase project → **Edge Functions** → **Secrets** → add
-   `RESEND_API_KEY` = your key and `RESET_FROM_EMAIL` = `Computer Programming <noreply@yourdomain.com>`.
-2. **Edge Functions** → **Deploy a new function** → **Via Editor**, name it exactly `password-reset`,
-   paste the contents of `supabase/functions/password-reset/index.ts`, click **Deploy**.
+Without a verified domain, Resend only delivers to your own Resend account email.
 
-### Option B — Supabase CLI
-Run from the project folder:
-```bash
-npx supabase login
-npx supabase link --project-ref zxqpcuncbpzxsaqmfcby
-npx supabase secrets set RESEND_API_KEY=re_xxx RESET_FROM_EMAIL="Computer Programming <noreply@yourdomain.com>"
-npx supabase functions deploy password-reset
-```
+## Manual setup (alternative)
+1. Supabase → **SQL Editor** → run `supabase/migrations/20261111000000_password_reset.sql`.
+2. Supabase → **Edge Functions → Secrets** → add `RESEND_API_KEY` (and `RESET_FROM_EMAIL`).
+3. **Edge Functions → Deploy a new function → Via Editor**, name `password-reset`,
+   paste `supabase/functions/password-reset/index.ts`, **Deploy**.
 
 ## 4. Existing students (registered without email)
 Their account and progress are untouched. They have three ways back in:
