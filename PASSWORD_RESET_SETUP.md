@@ -35,9 +35,14 @@ npx supabase secrets set RESEND_API_KEY=re_xxx RESET_FROM_EMAIL="Computer Progra
 npx supabase functions deploy password-reset
 ```
 
-## 4. Existing students
-Students who registered before this change have no email. They should log in,
-open **Profile**, and save a recovery email. New students enter it at registration.
+## 4. Existing students (registered without email)
+Their account and progress are untouched. They have three ways back in:
+- **Self-service:** Forgot password → "My account has no email" → enter student number,
+  full name (as registered) and email. If number and name match, the email is saved to
+  the account and the password is sent to it.
+- **Admin:** in the Admin Dashboard each student row has **Password** (see / change it)
+  and **Email** (add / fix their email) buttons.
+- If they can still log in, they can add the email on their **Profile** page.
 
 ## How it works
 The function looks up the student by email and emails them their student number

@@ -1,6 +1,9 @@
 // Supabase Edge Function: password-reset
 //
 // POST { email } -> emails the student their student number and current password
+// POST { email, studentNumber, studentName }
+//      -> for old accounts that have no email yet: if the number and full name match,
+//         saves the email on the account and sends the password to it
 //
 // Required secrets (supabase secrets set ...):
 //   RESEND_API_KEY   - API key from https://resend.com
@@ -64,15 +67,53 @@ async function sendEmail(to: string, name: string, studentNumber: string, passwo
   if (!res.ok) throw new Error(`Email send failed: ${res.status} ${await res.text()}`);
 }
 
+// Lower-case, collapse spaces, drop Arabic diacritics/tatweel so small typing differences still match.
+const normalizeName = (s: string) =>
+  String(s ?? "")
+    .normalize("NFKC")
+    .replace(/[\u064B-\u0652\u0640]/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "ي")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+
+async function linkEmailToOldAccount(email: string, studentNumber: string, studentName: string) {
+  const { data: student } = await supabase
+    .from("cp2_students")
+    .select("id, student_number, student_name, email")
+    .eq("student_number", studentNumber)
+    .maybeSingle();
+
+  if (!student || normalizeName(student.student_name) !== normalizeName(studentName)) {
+    return json({ ok: false, error: "no_match" }, 404);
+  }
+  if (student.email) return json({ ok: false, error: "has_email" }, 409);
+
+  const { data: taken } = await supabase
+    .from("cp2_students").select("id").eq("email", email).maybeSingle();
+  if (taken) return json({ ok: false, error: "email_taken" }, 409);
+
+  const { error } = await supabase.from("cp2_students").update({ email }).eq("id", student.id);
+  if (error) return json({ ok: false, error: error.code === "23505" ? "email_taken" : "server_error" }, 409);
+  return null; // linked; continue with the normal "send password" flow
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ ok: false, error: "method_not_allowed" }, 405);
 
   try {
-    const { email } = await req.json();
+    const { email, studentNumber, studentName } = await req.json();
     const cleanEmail = String(email ?? "").trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
       return json({ ok: false, error: "invalid_email" }, 400);
+    }
+
+    if (studentNumber) {
+      const failure = await linkEmailToOldAccount(cleanEmail, String(studentNumber).trim(), String(studentName ?? ""));
+      if (failure) return failure;
     }
 
     const { data: student } = await supabase

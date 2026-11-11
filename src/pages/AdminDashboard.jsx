@@ -53,6 +53,30 @@ const AdminDashboard = ({ onLogout }) => {
     if (!error) setStudents(students.map(s => s.id === id ? { ...s, progress: {} } : s));
   };
 
+  const showPassword = (student) => {
+    const newPassword = prompt(
+      `${student.student_name} (${student.student_number})\n\nCurrent password: ${student.password}\n\nTo change it, type a new password and press OK (min 4 characters):`,
+      ''
+    );
+    if (newPassword === null || newPassword === '') return;
+    if (newPassword.length < 4) { alert('Password must be at least 4 characters'); return; }
+    supabase.from('cp2_students').update({ password: newPassword }).eq('id', student.id).then(({ error }) => {
+      if (error) { alert('Could not change password'); return; }
+      setStudents(prev => prev.map(s => s.id === student.id ? { ...s, password: newPassword } : s));
+      alert(`Password changed to: ${newPassword}`);
+    });
+  };
+
+  const editEmail = async (student) => {
+    const input = prompt(`Recovery email for ${student.student_name} (${student.student_number}):`, student.email || '');
+    if (input === null) return;
+    const email = input.trim().toLowerCase();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('Invalid email'); return; }
+    const { error } = await supabase.from('cp2_students').update({ email: email || null }).eq('id', student.id);
+    if (error) { alert(error.code === '23505' ? 'This email is already used by another student' : 'Could not save email'); return; }
+    setStudents(prev => prev.map(s => s.id === student.id ? { ...s, email: email || null } : s));
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900/30">
       <header className="bg-slate-800/80 backdrop-blur border-b border-slate-700 sticky top-0 z-50">
@@ -119,7 +143,7 @@ const AdminDashboard = ({ onLogout }) => {
                     const completedWeeks = countCompletedWeeks(student.progress);
                     return (
                       <tr key={student.id} className="hover:bg-slate-700/30">
-                        <td className="px-6 py-4"><div><p className="text-white font-medium">{student.student_name}</p><p className="text-slate-400 text-sm">{student.student_number}</p></div></td>
+                        <td className="px-6 py-4"><div><p className="text-white font-medium">{student.student_name}</p><p className="text-slate-400 text-sm">{student.student_number}</p>{student.email ? <p className="text-slate-500 text-xs">{student.email}</p> : <p className="text-yellow-500/70 text-xs">no email</p>}</div></td>
                         <td className="px-6 py-4"><span className="px-3 py-1 bg-cyan-600/20 text-cyan-400 rounded-full text-sm">{student.section_number}</span></td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
@@ -130,6 +154,8 @@ const AdminDashboard = ({ onLogout }) => {
                         <td className="px-6 py-4"><span className={`font-bold ${getGradeColor(grade)}`}>{grade}</span><span className="text-slate-500 text-sm ml-2">({avg}%)</span></td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
+                            <button onClick={() => showPassword(student)} className="px-3 py-1 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 rounded text-sm">Password</button>
+                            <button onClick={() => editEmail(student)} className="px-3 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded text-sm">Email</button>
                             <button onClick={() => resetProgress(student.id, student.student_name)} className="px-3 py-1 bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400 rounded text-sm">Reset</button>
                             <button onClick={() => deleteStudent(student.id, student.student_name)} className="px-3 py-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded text-sm">Delete</button>
                           </div>

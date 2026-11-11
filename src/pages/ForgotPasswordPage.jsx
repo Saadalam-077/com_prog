@@ -4,11 +4,17 @@ import { supabase } from '../supabaseClient';
 const errorMessages = {
   invalid_email: 'Please enter a valid email | الرجاء إدخال بريد إلكتروني صحيح',
   not_found: 'No account is registered with this email | لا يوجد حساب مسجل بهذا البريد',
+  no_match: 'Student number and name do not match our records. Write your name exactly as you registered, or contact your instructor. | الرقم الجامعي والاسم غير متطابقين. اكتب اسمك كما سجلته أو تواصل مع المحاضر',
+  has_email: 'This account already has an email. Use the "I registered with an email" option. | هذا الحساب لديه بريد مسجل مسبقاً، استخدم الخيار الأول',
+  email_taken: 'This email is already used by another account | هذا البريد مستخدم في حساب آخر',
   too_soon: 'An email was just sent. Please wait a minute before trying again. | تم إرسال بريد للتو، انتظر دقيقة ثم حاول مرة أخرى',
 };
 
 const ForgotPasswordPage = ({ onNavigate }) => {
+  const [mode, setMode] = useState('email'); // 'email' | 'old'
   const [email, setEmail] = useState('');
+  const [studentNumber, setStudentNumber] = useState('');
+  const [studentName, setStudentName] = useState('');
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -20,7 +26,9 @@ const ForgotPasswordPage = ({ onNavigate }) => {
 
     let result;
     const { data, error: fnError } = await supabase.functions.invoke('password-reset', {
-      body: { email: email.trim().toLowerCase() },
+      body: mode === 'old'
+        ? { email: email.trim().toLowerCase(), studentNumber: studentNumber.trim(), studentName: studentName.trim() }
+        : { email: email.trim().toLowerCase() },
     });
     if (fnError) {
       // Non-2xx responses still carry our JSON body with an error code.
@@ -66,9 +74,30 @@ const ForgotPasswordPage = ({ onNavigate }) => {
                   <span>❌</span> {error}
                 </div>
               )}
+              <div className="grid grid-cols-2 gap-2 bg-slate-900/50 p-1 rounded-lg">
+                {[['email', 'I registered with an email', 'سجلت ببريد إلكتروني'], ['old', 'My account has no email', 'حسابي بدون بريد']].map(([key, en, ar]) => (
+                  <button key={key} type="button" onClick={() => { setMode(key); setError(''); }} className={`py-2 px-2 rounded-md text-xs leading-tight ${mode === key ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'}`}>
+                    {en}<br /><span className="font-arabic">{ar}</span>
+                  </button>
+                ))}
+              </div>
               <p className="text-slate-400 text-sm">
-                Enter the email you registered with and we'll send you your password. | أدخل بريدك الإلكتروني المسجل وسنرسل لك كلمة المرور.
+                {mode === 'email'
+                  ? "Enter the email you registered with and we'll send you your password. | أدخل بريدك الإلكتروني المسجل وسنرسل لك كلمة المرور."
+                  : 'Registered before emails were required? Enter your student number and full name exactly as you registered, plus your email. We will save the email to your account and send your password to it. Your progress is kept. | أدخل رقمك الجامعي واسمك الكامل كما سجلته وبريدك الإلكتروني، وسنحفظ البريد في حسابك ونرسل لك كلمة المرور. تقدمك محفوظ.'}
               </p>
+              {mode === 'old' && (
+                <>
+                  <div>
+                    <label className="block text-slate-300 text-sm mb-2">Student Number | الرقم الجامعي</label>
+                    <input type="text" inputMode="numeric" value={studentNumber} onChange={(e) => setStudentNumber(e.target.value.replace(/\D/g, ''))} className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-cyan-500" required disabled={loading} />
+                  </div>
+                  <div>
+                    <label className="block text-slate-300 text-sm mb-2">Full Name (as registered) | الاسم الكامل كما سجلته</label>
+                    <input type="text" value={studentName} onChange={(e) => setStudentName(e.target.value)} className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-cyan-500" required disabled={loading} />
+                  </div>
+                </>
+              )}
               <div>
                 <label className="block text-slate-300 text-sm mb-2">Email | البريد الإلكتروني</label>
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-cyan-500" placeholder="you@example.com" required disabled={loading} />
