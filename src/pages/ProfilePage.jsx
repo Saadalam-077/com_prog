@@ -1,7 +1,40 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { weekData, weekNumbers, TOTAL_WEEKS, isCourseWeekKey } from '../data/courseData';
 
-const ProfilePage = ({ user, onNavigate, onLogout }) => {
+const EmailCard = ({ user, onUpdateEmail }) => {
+  const [email, setEmail] = useState(user.email || '');
+  const [message, setMessage] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  const save = async (e) => {
+    e.preventDefault();
+    setSaving(true); setMessage(null);
+    const result = await onUpdateEmail(email);
+    setSaving(false);
+    if (result === true) setMessage({ ok: true, text: 'Email saved | تم حفظ البريد' });
+    else if (result === 'email_exists') setMessage({ ok: false, text: 'This email is already used | هذا البريد مستخدم' });
+    else setMessage({ ok: false, text: 'Could not save email | تعذر حفظ البريد' });
+  };
+
+  return (
+    <div className="bg-slate-800/50 rounded-2xl p-8 border border-slate-700 mb-8">
+      <h2 className="text-xl font-bold text-white mb-2">Recovery Email | البريد الإلكتروني</h2>
+      <p className="text-slate-400 text-sm mb-4">Used to reset your password if you forget it. | يُستخدم لاستعادة كلمة المرور.</p>
+      {!user.email && (
+        <p className="text-yellow-400 text-sm mb-4">⚠️ No email set yet — add one so you can recover your password. | لم تضف بريداً بعد</p>
+      )}
+      <form onSubmit={save} className="flex flex-col sm:flex-row gap-3">
+        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="flex-1 px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-cyan-500" placeholder="you@example.com" required disabled={saving} />
+        <button type="submit" disabled={saving || email.trim().toLowerCase() === (user.email || '')} className="px-6 py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
+          {saving ? 'Saving...' : 'Save | حفظ'}
+        </button>
+      </form>
+      {message && <p className={`mt-3 text-sm ${message.ok ? 'text-cyan-400' : 'text-red-400'}`}>{message.text}</p>}
+    </div>
+  );
+};
+
+const ProfilePage = ({ user, onNavigate, onLogout, onUpdateEmail }) => {
   const completedWeeks = Object.entries(user.progress).filter(([key, val]) => val.completed && isCourseWeekKey(key)).length;
 
   const getGradeColor = (grade) => {
@@ -48,6 +81,8 @@ const ProfilePage = ({ user, onNavigate, onLogout }) => {
             </div>
           </div>
         </div>
+
+        <EmailCard user={user} onUpdateEmail={onUpdateEmail} />
 
         <div className="bg-slate-800/50 rounded-2xl p-8 border border-slate-700">
           <h2 className="text-xl font-bold text-white mb-6">Week Progress | تقدم الأسابيع</h2>
